@@ -6,11 +6,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 
@@ -20,14 +18,14 @@ public class LoginThread extends Thread {
     private JTextField t;
     public void run() {
         /*
-         * è®¾ç½®ç™»å½•ç•Œé¢
+         * ÉèÖÃµÇÂ¼½çÃæ
          */
         loginf = new JFrame();
         loginf.setResizable(false);
         loginf.setLocation(300, 200);
         loginf.setSize(400, 150);
         loginf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        loginf.setTitle("èŠå¤©å®¤" + " - ç™»å½•");
+        loginf.setTitle("ÁÄÌìÊÒ" + " - µÇÂ¼");
 
         t = new JTextField("Version " + "1.1.0" + "        By liwei");
         t.setHorizontalAlignment(JTextField.CENTER);
@@ -55,7 +53,7 @@ public class LoginThread extends Thread {
         loginPassword.setHorizontalAlignment(JTextField.CENTER);
         loginp.add(loginPassword);
         /*
-         * ç›‘å¬é€€å‡ºæŒ‰é’®(åŒ¿åå†…éƒ¨ç±»)
+         * ¼àÌıÍË³ö°´Å¥(ÄäÃûÄÚ²¿Àà)
          */
         JButton b1 = new JButton("Exit");
         loginp.add(b1);
@@ -71,7 +69,7 @@ public class LoginThread extends Thread {
         loginf.setVisible(true);
 
         /**
-         * ç›‘å¬å™¨,ç›‘å¬"ç™»å½•"Buttonçš„ç‚¹å‡»å’ŒTextFieldçš„å›è½¦
+         * ¼àÌıÆ÷,¼àÌı"µÇÂ¼"ButtonµÄµã»÷ºÍTextFieldµÄ»Ø³µ
          */
         class ButtonListener implements ActionListener {
             private Socket s;
@@ -96,17 +94,35 @@ public class LoginThread extends Thread {
                         String oldPassword=rs.getString("PASSWORD");
                         if (MD5.checkpassword(password,oldPassword))
                         {
-                            System.out.println("yes!");
-                            loginf.setVisible(false);
-                            ChatThreadWindow chatThreadWindow=new ChatThreadWindow();
-                            sql="UPDATE users set IP=?,PORT=8888 where USERNAME=?";
 
+                            int port=1688;
+                            DatagramSocket ds = null;
                             InetAddress ip4 = InetAddress.getLocalHost();
-                            pstmt=conn.prepareStatement(sql);
                             System.out.println(ip4.getHostAddress());
+                            while(true)
+                            {
+                                try {
+                                    ds=new DatagramSocket(port);
+                                    break;
+                                } catch (IOException ex) {
+                                    port++;
+
+                                }
+                            }
+
+                            sql="UPDATE users set IP=?,port=? ,status=? where USERNAME=?";
+
+
+                            pstmt=conn.prepareStatement(sql);
+
                             pstmt.setString(1,ip4.getHostAddress());
-                            pstmt.setString(2,username);
+                            pstmt.setInt(2,port);
+                            pstmt.setString(3,"online");
+                            pstmt.setString(4,username);
                             pstmt.executeUpdate();
+                            loginf.setVisible(false);
+
+                            ChatThreadWindow chatThreadWindow=new ChatThreadWindow(username,ds);
                         }
                         else
                         {
@@ -124,9 +140,9 @@ public class LoginThread extends Thread {
                 }
 
 				/*
-				1ã€æ ¹æ®ç”¨æˆ·å»æ•°æ®åº“æŠŠåŠ å¯†åçš„å¯†ç æ‹¿åˆ°
+				1¡¢¸ù¾İÓÃ»§È¥Êı¾İ¿â°Ñ¼ÓÃÜºóµÄÃÜÂëÄÃµ½
 				SELECT password FROM users WHERE username='liwei';
-				2ã€æŠŠç™»å½•ç•Œé¢è¾“å…¥çš„å¯†ç å’Œæ•°æ®åº“é‡ŒåŠ å¯†åçš„è¿›è¡Œæ¯”å¯¹ï¼ˆè°ƒç”¨MD5ç±»çš„checkpasswordæ–¹æ³•ï¼‰
+				2¡¢°ÑµÇÂ¼½çÃæÊäÈëµÄÃÜÂëºÍÊı¾İ¿âÀï¼ÓÃÜºóµÄ½øĞĞ±È¶Ô£¨µ÷ÓÃMD5ÀàµÄcheckpassword·½·¨£©
 				 */
             }
         }

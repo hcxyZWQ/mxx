@@ -1,34 +1,33 @@
 package cn.edu.hcxy.client;
 
-import java.awt.BorderLayout;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-
+import javax.swing.*;
+import java.awt.*;
+import java.io.IOException;
+import java.net.*;
+import java.sql.*;
 
 /**
- * èŠå¤©çº¿ç¨‹
+ * ÁÄÌìÏß³Ì
  */
 public class ChatThreadWindow {
-    private String name;
-    private JComboBox cb;
+    private String name;//µ±Ç°Ò³ÃæµÄÓÃ»§Ãû
+    JComboBox cb;
     private JFrame f;
-    private JTextArea ta;
+    JTextArea ta;
     private JTextField tf;
-    private static int total;// åœ¨çº¿äººæ•°ç»Ÿè®¡
+    private static int total;// ÔÚÏßÈËÊıÍ³¼Æ
+    DatagramSocket ds;
 
-    public ChatThreadWindow() {
+    public ChatThreadWindow(String name, DatagramSocket ds) {
+        this.ds = ds;
+        this.name=name;
         /*
-         * è®¾ç½®èŠå¤©å®¤çª—å£ç•Œé¢
+         * ÉèÖÃÁÄÌìÊÒ´°¿Ú½çÃæ
          */
         f = new JFrame();
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setSize(600, 400);
-        f.setTitle("chratroom" + " - " + name + "     onlineNum" + ++total);
+        f.setTitle("ÁÄÌìÊÒ" + " - " + name + "     µ±Ç°ÔÚÏßÈËÊı:" + ++total);
         f.setLocation(300, 200);
         ta = new JTextArea();
         JScrollPane sp = new JScrollPane(ta);
@@ -36,7 +35,7 @@ public class ChatThreadWindow {
         tf = new JTextField();
         cb = new JComboBox();
         cb.addItem("All");
-        JButton jb = new JButton("pravite_Frame");
+        JButton jb = new JButton("Ë½ÁÄ´°¿Ú");
         JPanel pl = new JPanel(new BorderLayout());
         pl.add(cb);
         pl.add(jb, BorderLayout.WEST);
@@ -46,5 +45,63 @@ public class ChatThreadWindow {
         f.getContentPane().add(p, BorderLayout.SOUTH);
         f.getContentPane().add(sp);
         f.setVisible(true);
+        GetMessageThread getMessageThread = new GetMessageThread(this);//ÓÉÓÚ´«µÄ²ÎÊı¹ı¶à£¬¿ÉÖ±½ÓÓÃthis
+        getMessageThread.start();
+
+        /*
+        ÌáÊ¾XXX½øÈëÁÄÌìÊÒ
+         */
+        showXXXIntoChatRoom();
+    }
+
+    public void showXXXIntoChatRoom() {
+        String url = "jdbc:oracle:thin:@localhost:1521:orcl";
+        String username_db = "opts";
+        String password_db = "opts1234";
+        PreparedStatement pstmt = null;
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url, username_db, password_db);
+            String sql = "SELECT username,ip,port FROM users WHERE status='online'";
+            pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String username=rs.getString("USERNAME");//»ñÈ¡sqlµÄÓÃ»§Ãû
+                String ip = rs.getString("IP");
+                int port = rs.getInt("PORT");
+                System.out.println(ip);
+                System.out.println(port);
+                byte[] ipB = new byte[4];
+
+                String ips[] = ip.split("\\.");
+                for (int i = 0; i < ips.length; i++) {
+                    ipB[i] = (byte)Integer.parseInt(ips[i]);
+                }
+                if(!username.equals(name))//Èç¹ûÊäÈëµÄĞÕÃûÓë»ñÈ¡µ½µÄ²»Ò»ÖÂ  ÔòÏòËı·¢ËÍĞÅÏ¢
+                {
+                    String message = name+"½øÈëÁËÁÄÌìÊÒ";
+                    byte[] m = message.getBytes();
+                    DatagramPacket dp = new DatagramPacket(m, m.length);
+                    dp.setAddress(InetAddress.getByAddress(ipB));
+                    dp.setPort(port);
+                    DatagramSocket ds = new DatagramSocket();
+                    ds.send(dp);//Í¶µİ
+                }else if(username.equals(name))//Èç¹ûÊäÈëµÄĞÕÃûÓë»ñÈ¡µ½µÄ²»Ò»ÖÂ  ÔòÏòËı·¢ËÍĞÅÏ¢
+                {
+                    String message = username+"ÕıÔÚÁÄÌìÊÒ";
+                    byte[] m = message.getBytes();
+                    DatagramPacket dp = new DatagramPacket(m, m.length);
+                    dp.setAddress(InetAddress.getByAddress(ipB));
+                    dp.setPort(port);
+
+                    DatagramSocket ds = new DatagramSocket();
+                    ds.send(dp);//Í¶µİ
+                }
+            }
+        } catch (SQLException | UnknownHostException | SocketException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
