@@ -39,9 +39,6 @@ public class GetMessageThread extends Thread{
                 if (masssgre.contains("进入了聊天室")) {
                     masssgre = masssgre.replace("进入了聊天室", "");
                     System.out.println("处理后的消息" + masssgre);
-                }else if (masssgre.contains("正在聊天室")) {
-                    masssgre = masssgre.replace("正在聊天室", "");
-                    System.out.println("处理后的消息" + masssgre);
                 }
 
                 cb.addItem(masssgre);//将截取到的字符串放入下拉列表

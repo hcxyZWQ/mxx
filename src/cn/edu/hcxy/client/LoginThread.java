@@ -112,7 +112,6 @@ public class LoginThread extends Thread {
 
                             sql="UPDATE users set IP=?,port=? ,status=? where USERNAME=?";
 
-
                             pstmt=conn.prepareStatement(sql);
 
                             pstmt.setString(1,ip4.getHostAddress());
